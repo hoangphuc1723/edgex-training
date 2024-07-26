@@ -1,0 +1,186 @@
+- device mqtt
+trc khi build docker, xoa all dev pf.
+ko co dev pf nao trong dev mqtt, check :4000
+post dev pf qua api (postman), tao du lieu
+curl -X POST -F 'file=@/path/to/your/profile/here/EdgeX_CameraMonitorProfile.yml' http://localhost:59881/api/v2/deviceprofile/uploadfile
+
+app service? chuyen len mqtt bnoker khac
+-
+POST -> http://localhost:59881/api/v2/deviceservice
+{
+    "apiVersion" : "v2",
+    "service": {
+    "name": "MQTT-test-device",
+    "description": "MQTT device is created for test purpose",
+    "adminState": "UNLOCKED",
+    "labels": [
+        "MQTT",
+        "test"
+    ],
+    "baseAddress": "device-mqtt:59982"
+    }
+}
+
+    [
+        {
+            "apiVersion" : "v2",
+            "device": {
+                "name": "MQTT-test-device",
+                "description": "MQTT device is created for test purpose",
+                "adminState": "UNLOCKED",
+                "operatingState": "UP",
+                "labels": [
+                    "MQTT","test"
+                ],
+                "location": "{lat:45.45,long:47.80}",
+                "serviceName": "device-mqtt",
+                "profileName": "Test-Device-MQTT-Profile",
+                "protocols": {
+                    "mqtt-protocol": {
+                        "camera-address": "localhost",
+                        "port": "59983",
+                        "unitID": "1"
+                    }
+                }
+            }
+        }
+    ]
+
+        {
+            "apiVersion" : "v3",
+            "event": {
+                "apiVersion" : "v3",
+                "deviceName": "MQTT-test-device",
+                "profileName": "camera-monitor-profile",
+                "sourceName": "HumanCount",
+                "id": "d5471d59-2810-419a-8744-18eb8fa03465",
+                "origin": 1602168089665565200,
+                "readings": [
+                    {
+                        "id": "7003cacc-0e00-4676-977c-4e58b9612abd",
+                        "origin": 1602168089665565200,
+                        "deviceName": "countcamera1",
+                        "resourceName": "HumanCount",
+                        "profileName": "camera-monitor-profile",
+                        "valueType": "Int16",
+                        "value": "5"
+                    },
+                    {
+                        "id": "7003cacc-0e00-4676-977c-4e58b9612abe",
+                        "origin": 1602168089665565200,
+                        "deviceName": "countcamera1",
+                        "resourceName": "CanineCount",
+                        "profileName": "camera-monitor-profile",
+                        "valueType": "Int16",
+                        "value": "3"
+                    }                        
+                ]
+            }
+        }
+
+PUT request to
+http://localhost:59882/api/v2/device/name/MQTT-test-device/message
+
+{"message":"message sieu cap vippro"}
+
+
+$ curl http://localhost:59882/api/v2/device/name/MQTT-test-device/message \
+    -H "Content-Type:application/json" -X PUT  \
+    -d '{"message":"Hello!"}'
+
+
+[Trigger]
+
+
+TRIGGER_EDGEXMESSAGEBUS_SUBSCRIBEHOST_SUBSCRIBETOPICS: edgex/events/device/SMIC-mp31-plc1-deviceprofile-1/#/#,edgex/events/device/SMIC-mp31-plc1-deviceprofile-2/#/#,edgex/events/device/SMIC-mp31-plc1-deviceprofile-3/#/#,edgex/events/device/SMIC-mp31-plc1-deviceprofile-4/#/#,edgex/events/device/SMIC-mp31-plc1-deviceprofile-5/#/#,edgex/events/device/SMIC-mp31-plc1-deviceprofile-6/#/#,edgex/events/device/SMIC-mp31-plc1-deviceprofile-7/#/#,edgex/events/device/SMIC-mp31-plc1-deviceprofile-8/#/#,edgex/events/device/SMIC-mp31-plc1-deviceprofile-9/#/#,edgex/events/device/SMIC-mp31-plc1-deviceprofile-10/#/#,edgex/events/device/SMIC-mp31-plc2-deviceprofile-11/#/#,edgex/events/device/SMIC-mp31-plc2-deviceprofile-12/#/#
+    hostname: edgex-app-smart-factory-s7-gateway-mp31
+    image: 103.129.80.172:8081/app-smart-factory-s7-gateway:v1.1.0
+    # image: 103.129.80.172:8081/app-smart-factory-s7-gateway:v1.1.0
+    networks:
+      edgex-network: {}
+    ports:
+      - 127.0.0.1:59715:59715/tcp
+    read_only: false
+    restart: always
+    security_opt:
+      - no-new-privileges:true
+    user: root:root
+    privileged: true
+    volumes:
+      - edgex-init:/edgex-init:ro,z
+      - /tmp/edgex/secrets/app-smart-factory-s7-gateway:/tmp/edgex/secrets/app-smart-factory-s7-gateway:ro,z
+      - /tmp/edgex/secrets/security-proxy-setup:/tmp/edgex/secrets/security-proxy-setup:rw,z
+      - /tmp:/tmp:ro,z11:27/-strong/-heart:>:o:-((:-happ-smart-factory-s7-gateway-mp31:
+    command: "/app-smart-factory-s7-gateway"
+    container_name: edgex-app-smart-factory-s7-gateway-mp31
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+    depends_on:
+      - consul
+      - data
+      - metadata
+      - security-bootstrapper
+      - device-s7-mp31
+      - device-mqtt
+    entrypoint:
+      - /edgex-init/ready_to_run_wait_install.sh
+    environment:
+      ID_CLOUD: mp31
+      TOPIC_CLOUD: mp31
+      QUERY_LABEL: mp31
+      CLIENT_ID: mp31
+      BROKER: 172.17.100.202:1883
+      BROKER_CLOUD: 172.17.100.202:1883
+      # BROKER_CLOUD: 172.17.100.202:1883
+      HOSTNAME: 172.17.100.202
+      HOSTNAME_CLOUD: 172.17.100.202
+      USERNAME_CLOUD: vinh
+      PASSWORD_CLOUD: vinh
+      API_GATEWAY_HOST: edgex-kong
+      API_GATEWAY_STATUS_PORT: '8100'
+      CLIENTS_CORE_COMMAND_HOST: edgex-core-command
+      CLIENTS_CORE_DATA_HOST: edgex-core-data
+      CLIENTS_CORE_METADATA_HOST: edgex-core-metadata
+      CLIENTS_SUPPORT_NOTIFICATIONS_HOST: edgex-support-notifications
+      CLIENTS_SUPPORT_SCHEDULER_HOST: edgex-support-scheduler
+      DATABASES_PRIMARY_HOST: edgex-redis
+      EDGEX_SECURITY_SECRET_STORE: "true"
+      MESSAGEQUEUE_HOST: edgex-redis
+      PROXY_SETUP_HOST: edgex-security-proxy-setup
+      REGISTRY_HOST: edgex-core-consul
+      SECRETSTORE_HOST: edgex-vault
+      SECRETSTORE_PORT: '8200'
+      SERVICE_HOST: edgex-app-smart-factory-s7-gateway-mp31
+      SPIFFE_ENDPOINTSOCKET: /tmp/edgex/secrets/spiffe/public/api.sock
+      SPIFFE_TRUSTBUNDLE_PATH: /tmp/edgex/secrets/spiffe/trust/bundle
+      SPIFFE_TRUSTDOMAIN: edgexfoundry.org
+      STAGEGATE_BOOTSTRAPPER_HOST: edgex-security-bootstrapper
+      STAGEGATE_BOOTSTRAPPER_STARTPORT: '54321'
+      STAGEGATE_DATABASE_HOST: edgex-redis
+      STAGEGATE_DATABASE_PORT: '6379'
+      STAGEGATE_DATABASE_READYPORT: '6379'
+      STAGEGATE_KONGDB_HOST: edgex-kong-db
+      STAGEGATE_KONGDB_PORT: '5432'
+      STAGEGATE_KONGDB_READYPORT: '54325'
+      STAGEGATE_READY_TORUNPORT: '54329'
+      STAGEGATE_REGISTRY_HOST: edgex-core-consul
+      STAGEGATE_REGISTRY_PORT: '8500'
+      STAGEGATE_REGISTRY_READYPORT: '54324'
+      STAGEGATE_SECRETSTORESETUP_HOST: edgex-security-secretstore-setup
+      STAGEGATE_SECRETSTORESETUP_TOKENS_READYPORT: '54322'
+      STAGEGATE_WAITFOR_TIMEOUT: 300s
+      TRIGGER_EDGEXMESSAGEBUS_PUBLISHHOST_HOST: edgex-redis
+      TRIGGER_EDGEXMESSAGEBUS_SUBSCRIBEHOST_HOST: edgex-redisEdgeX Foundry
+
+1/ device mqtt de sub broker may khac
+2/ 2 app svc: 1 app nhan tin nhan tu may host, 1 may tu may cloud.
+"host": "192.168.103.231"; neu dung IP moi gui
+neu nhan duoc ip may kia:
+{
+    "CPU":
+    "RAM":
+    "":
+}
+2/ 
